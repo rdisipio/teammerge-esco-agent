@@ -28,10 +28,7 @@ cd teammerge-esco-agent
 2. Create a virtual environment and install dependencies:
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-
-pip install -r requirements.txt
+pipenv install
 ```
 
 3. Download the [ESCO v1.2 datasets](https://ec.europa.eu/esco/portal/download) and place them in `./data/esco`.
