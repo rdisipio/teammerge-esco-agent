@@ -31,6 +31,7 @@ def build_planner_chain(llm):
 You are a strategic planner helping restructure tech teams. 
 Based on the following input, recommend a new team structure in under 3 sentences.
 Assign a name to each new team/pod. Names can be creative but should reflect the team's focus.
+Report briefly on the skills gap for each team.
 
 HR Reported:
 {hr}
