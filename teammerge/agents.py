@@ -7,7 +7,7 @@ from langchain.agents import initialize_agent, AgentType
 from langchain.memory import ConversationBufferMemory
 
 # Shared memory for all agents
-memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+#memory = ConversationBufferMemory(memory_key="chat_history", input_key="human_input", return_messages=True)
 
 def build_hr_chain(llm):
     template = """You are an HR expert. Based on the following team update, describe the current and incoming team structure in 2–3 concise sentences.
@@ -15,15 +15,22 @@ def build_hr_chain(llm):
 Team update:
 {input}
 """
+    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
     return LLMChain(
         llm=llm,
         prompt=PromptTemplate.from_template(template),
-        memory=ConversationBufferMemory(memory_key="chat_history", return_messages=True),
+        memory=memory,
         verbose=True
     )
 
+
 def build_planner_chain(llm):
-    template = """You are a strategic planner helping restructure tech teams. Based on the following input, recommend a new team structure in under 3 sentences.
+    prompt = PromptTemplate(
+        input_variables=["hr", "esco"],
+        template = """
+You are a strategic planner helping restructure tech teams. 
+Based on the following input, recommend a new team structure in under 3 sentences.
+Assign a name to each new team/pod. Names can be creative but should reflect the team's focus.
 
 HR Reported:
 {hr}
@@ -31,14 +38,16 @@ HR Reported:
 ESCO Insights:
 {esco}
 """
+    )
+    memory = ConversationBufferMemory(memory_key="chat_history", input_key="hr", return_messages=True)
     return LLMChain(
         llm=llm,
-        prompt=PromptTemplate.from_template(template),
-        memory=ConversationBufferMemory(memory_key="chat_history", return_messages=True),
+        prompt=prompt,
+        memory=memory,
         verbose=True
     )
 
-
+'''
 def build_planner_agent(llm, tools):
     return initialize_agent(
         tools=tools,
@@ -47,17 +56,20 @@ def build_planner_agent(llm, tools):
         verbose=True,
         memory=memory
     )
+'''
 
 def build_esco_agent(llm, tools):
+    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
     return initialize_agent(
         tools=tools,
         llm=llm,
         agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-        verbose=True,
+        verbose=False, # Set to True for debugging
         memory=memory,
         handle_parsing_errors=True
     )
 
+'''
 def build_hr_agent(llm, tools):
     return initialize_agent(
         tools=tools,
@@ -66,6 +78,7 @@ def build_hr_agent(llm, tools):
         verbose=True,
         memory=memory
     )
+'''
 
 
 def run_roundtable(initial_prompt, hr_agent, esco_agent, planner_agent):
