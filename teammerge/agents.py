@@ -1,34 +1,45 @@
 # agents.py
 
+import pandas as pd
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.agents import initialize_agent, AgentType
 from langchain.memory import ConversationBufferMemory
 
-from .tools import get_skill_tool, get_occupation_tool, get_skill_gap_tool
-
 # Shared memory for all agents
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-# --- HR Strategist Agent ---
-def build_hr_agent(llm):
-    hr_prompt = PromptTemplate.from_template("You are an experienced HR strategist. {input}")
-    return LLMChain(llm=llm, prompt=hr_prompt, memory=memory)
+def build_hr_chain(llm):
+    template = """You are an HR expert. Based on the following team update, describe the current and incoming team structure in 2–3 concise sentences.
 
-# --- ESCO Expert Agent (with tools) ---
-def build_esco_agent(llm, tools=[]):
-    esco_tools = [get_skill_tool, get_occupation_tool, get_skill_gap_tool]
-    all_tools = tools + esco_tools
-    return initialize_agent(
-        tools=all_tools,
+Team update:
+{input}
+"""
+    return LLMChain(
         llm=llm,
-        agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-        verbose=True,
-        memory=memory
+        prompt=PromptTemplate.from_template(template),
+        memory=ConversationBufferMemory(memory_key="chat_history", return_messages=True),
+        verbose=True
     )
 
-# --- Planner Agent (with tools) ---
-def build_planner_agent(llm, tools=[]):
+def build_planner_chain(llm):
+    template = """You are a strategic planner helping restructure tech teams. Based on the following input, recommend a new team structure in under 3 sentences.
+
+HR Reported:
+{hr}
+
+ESCO Insights:
+{esco}
+"""
+    return LLMChain(
+        llm=llm,
+        prompt=PromptTemplate.from_template(template),
+        memory=ConversationBufferMemory(memory_key="chat_history", return_messages=True),
+        verbose=True
+    )
+
+
+def build_planner_agent(llm, tools):
     return initialize_agent(
         tools=tools,
         llm=llm,
@@ -36,3 +47,53 @@ def build_planner_agent(llm, tools=[]):
         verbose=True,
         memory=memory
     )
+
+def build_esco_agent(llm, tools):
+    return initialize_agent(
+        tools=tools,
+        llm=llm,
+        agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        verbose=True,
+        memory=memory,
+        handle_parsing_errors=True
+    )
+
+def build_hr_agent(llm, tools):
+    return initialize_agent(
+        tools=tools,
+        llm=llm,
+        agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        verbose=True,
+        memory=memory
+    )
+
+
+def run_roundtable(initial_prompt, hr_agent, esco_agent, planner_agent):
+    print("🟢 Initial Prompt:\n", initial_prompt)
+
+    # Step 1: HR Agent (LLMChain)
+    hr_response = hr_agent.run({"input": initial_prompt})
+    print("\n🧑‍💼 HR Agent:\n", hr_response)
+
+    # Step 2: ESCO Agent
+    esco_prompt = (
+        "The HR team reported: " + hr_response + "\n"
+        "Use the available tools to look up 2–3 core ESCO skills for each mentioned role. "
+        "Only return a final answer after using tools. Do not make up tool responses. "
+        "If unsure, say you need more data."
+    )
+    esco_response = esco_agent.run(esco_prompt)
+    print("\n📚 ESCO Agent:\n", esco_response)
+
+    # Step 3: Planner Agent (LLMChain)
+    planner_response = planner_agent.run({
+        "hr": hr_response,
+        "esco": esco_response
+    })
+    print("\n🧠 Planner Agent:\n", planner_response)
+
+    return {
+        "hr": hr_response,
+        "esco": esco_response,
+        "planner": planner_response
+    }

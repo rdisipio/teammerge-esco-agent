@@ -1,11 +1,17 @@
 # tools.py
 
 from langchain.tools import Tool
-from .utils import calculate_skill_gap
+from .utils import calculate_skill_gap, ESCOContext
 
+# --- Dummy Tool ---
+dummy_tool = Tool(
+    name="Dummy",
+    func=lambda x: "I'm just a placeholder tool.",
+    description="Does nothing. Used to satisfy agent setup constraints."
+)
 
 # --- Skill Search Tool ---
-def search_skills_semantic(query, vectorstore, top_k=5):
+def search_skills_semantic(query, vectorstore, top_k=10):
     results = vectorstore.similarity_search(query, k=top_k)
     if not results:
         return "No similar skills found."
@@ -19,7 +25,7 @@ def get_skill_tool(vectorstore):
     )
 
 # --- Occupation Search Tool ---
-def search_occupations_semantic(query, vectorstore, top_k=5):
+def search_occupations_semantic(query, vectorstore, top_k=3):
     results = vectorstore.similarity_search(query, k=top_k)
     if not results:
         return "No similar occupations found."
@@ -32,29 +38,29 @@ def get_occupation_tool(vectorstore):
         description="Search ESCO occupations related to a concept using semantic similarity."
     )
 
-# --- Skill Gap Tool ---
-def skill_gap_tool_func(query, calculate_skill_gap):
-    try:
-        parts = dict(part.strip().split("=") for part in query.split(";"))
-        occupation = parts["occupation"].strip()
-        user_skills = [s.strip() for s in parts["skills"].split(",")]
-    except:
-        return "Please format input as: occupation=<job>; skills=<comma-separated skills>"
+# --- Skill Gap Analysis Tool ---
+def get_skill_gap_tool(context: ESCOContext):
+    def skill_gap_func(query: str):
+        try:
+            parts = dict(part.strip().split("=") for part in query.split(";"))
+            occupation = parts["occupation"].strip()
+            user_skills = [s.strip() for s in parts["skills"].split(",")]
+        except Exception:
+            return "Please format input as: occupation=<job>; skills=<comma-separated skills>"
 
-    gap = calculate_skill_gap(user_skills, occupation)
-    if isinstance(gap, str):
-        return gap
+        gap = calculate_skill_gap(user_skills, occupation, context.get_occupation_skills)
+        if isinstance(gap, str):
+            return gap
 
-    return (
-        f"Missing essential skills for '{occupation}':\n- " +
-        "\n- ".join(gap['missing_essential']) + "\n\n" +
-        f"Missing optional skills:\n- " +
-        "\n- ".join(gap['missing_optional'])
-    )
+        return (
+            f"Missing essential skills for '{occupation}':\n- " +
+            "\n- ".join(gap['missing_essential']) +
+            "\n\nMissing optional skills:\n- " +
+            "\n- ".join(gap['missing_optional'])
+        )
 
-def get_skill_gap_tool(calculate_skill_gap):
     return Tool(
         name="Skill Gap Analyzer",
-        func=lambda q: skill_gap_tool_func(q, calculate_skill_gap),
+        func=skill_gap_func,
         description="Compare known skills with the requirements for a given occupation. Format: occupation=<job>; skills=<comma-separated skills>"
     )
