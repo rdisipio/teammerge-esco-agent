@@ -1,0 +1,7 @@
+langchain
+chromadb
+sentence-transformers
+pandas
+ast
+openai  # Required if using OpenAI-compatible endpoints like Groq
+jupyter
