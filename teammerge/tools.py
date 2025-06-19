@@ -1,6 +1,8 @@
 # tools.py
 
 from langchain.tools import Tool
+from utils import calculate_skill_gap
+
 
 # --- Skill Search Tool ---
 def search_skills_semantic(query, vectorstore, top_k=5):
