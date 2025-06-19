@@ -5,7 +5,7 @@ from langchain.prompts import PromptTemplate
 from langchain.agents import initialize_agent, AgentType
 from langchain.memory import ConversationBufferMemory
 
-from tools import get_skill_tool, get_occupation_tool, get_skill_gap_tool
+from .tools import get_skill_tool, get_occupation_tool, get_skill_gap_tool
 
 # Shared memory for all agents
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)

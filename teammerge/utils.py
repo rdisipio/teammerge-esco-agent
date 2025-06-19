@@ -8,10 +8,10 @@ def load_esco_data(skills_path, occupations_path):
     Parse essential and optional skill links.
     """
     skills_df = pd.read_csv(skills_path)
-    skills_df = skills_df[['id', 'preferredLabel', 'description']].dropna()
+    skills_df = skills_df[['conceptUri', 'preferredLabel', 'description']].dropna()
 
     occupations_df = pd.read_csv(occupations_path)
-    occupations_df = occupations_df[['id', 'preferredLabel', 'description', 'hasEssentialSkill', 'hasOptionalSkill']]
+    occupations_df = occupations_df[['conceptUri', 'preferredLabel', 'description', 'hasEssentialSkill', 'hasOptionalSkill']]
 
     def parse_uris(raw):
         if pd.isna(raw):
@@ -27,12 +27,19 @@ def load_esco_data(skills_path, occupations_path):
     return skills_df, occupations_df
 
 
-def get_occupation_skills(occupation_label, skills_df, occupations_df):
+def make_skill_lookup(skills_df):
+    """
+    Create a lookup dictionary for ESCO skills.
+    Maps concept URIs to preferred labels.
+    """
+    return skills_df.set_index('conceptUri')['preferredLabel'].to_dict()
+
+
+def get_occupation_skills(occupation_label, skill_lookup, occupations_df):
     """
     Fetch essential and optional skills for a given ESCO occupation.
     Returns a dictionary with occupation name, essential skills, and optional skills.   
     """
-    skill_lookup = skills_df.set_index('id')['preferredLabel'].to_dict()
 
     match = occupations_df[occupations_df['preferredLabel'].str.lower() == occupation_label.lower()]
     if match.empty:

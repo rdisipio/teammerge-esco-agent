@@ -1,7 +1,7 @@
 # tools.py
 
 from langchain.tools import Tool
-from utils import calculate_skill_gap
+from .utils import calculate_skill_gap
 
 
 # --- Skill Search Tool ---
