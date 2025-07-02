@@ -65,7 +65,7 @@ def build_esco_agent(llm, tools):
         tools=tools,
         llm=llm,
         agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-        verbose=False, # Set to True for debugging
+        verbose=True, # Set to True for debugging
         memory=memory,
         handle_parsing_errors=True
     )
